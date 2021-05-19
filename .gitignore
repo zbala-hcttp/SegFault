@@ -5,9 +5,6 @@
 /.pnp
 .pnp.js
 
-#abis json files
-/src/abis
-
 # testing
 /coverage
 
