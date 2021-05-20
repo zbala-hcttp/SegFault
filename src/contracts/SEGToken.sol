@@ -1,9 +1,9 @@
 pragma solidity ^0.5.0;
 
 contract SEGToken {
-    string  public name = "Seg Token";
+    string  public name = "Seg Power";
     string  public symbol = "SEG";
-    string  public standard = "Seg Token v1.0";
+    string  public standard = "Seg Power v1.0";
     uint256 public totalSupply;
 
     event Transfer(
@@ -21,7 +21,7 @@ contract SEGToken {
     mapping(address => uint256) public balanceOf;
     mapping(address => mapping(address => uint256)) public allowance;
 
-    function SegToken (uint256 _initialSupply) public {
+    constructor(uint256 _initialSupply) public {
         balanceOf[msg.sender] = _initialSupply;
         totalSupply = _initialSupply;
     }

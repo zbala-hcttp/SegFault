@@ -8,7 +8,7 @@ contract('SEGToken', (accounts) => {
   let segToken;
   
   before(async () => {
-    segToken = await SegToken.deployed()
+    segToken = await SegToken.new(1000000)
   })
 
   describe('deployment', async () => {
@@ -22,7 +22,7 @@ contract('SEGToken', (accounts) => {
 
     it('has the correct name', async () => {
       const name = await segToken.name()
-      assert.equal(name, 'Seg Token')
+      assert.equal(name, 'Seg Power')
     })
 
     it('has the correct symbol', async () => {
@@ -32,15 +32,11 @@ contract('SEGToken', (accounts) => {
 
     it('has the correct standard', async () => {
       const standard = await segToken.standard()
-      assert.equal(standard, 'Seg Token v1.0')
+      assert.equal(standard, 'Seg Power v1.0')
     })
   })
   
   describe('methods', async () => {
-
-    before(async () => {
-      await segToken.SegToken(1000000)
-    })
 	
     it('allocates the initial supply upon deployment', async () => {
 	  const totalSupply = await segToken.totalSupply()
