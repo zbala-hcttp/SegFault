@@ -29,7 +29,10 @@ class Main extends Component {
                       required />
                   </div>
                   <div class="col text-center">
-                    <button type="submit" className="btn btn-primary btn-default btn-block" style={{ width: '190px', borderRadius: '15px', fontSize: '14px', backgroundColor: '#1E82C7' }}>
+                    <button 
+						type="submit" 
+						className="btn btn-primary btn-default btn-block" 
+						style={{ width: '190px', borderRadius: '15px', fontSize: '14px', backgroundColor: '#1E82C7' }}>
                       ADD QUESTION
                     </button>
                   </div>
@@ -76,7 +79,7 @@ class Main extends Component {
             </main>
           </div>
         </div>
-        </div>
+      </div>
     );
   }
 }

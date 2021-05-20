@@ -40,7 +40,7 @@ class App extends Component {
       const postCount = await socialNetwork.methods.postCount().call()
       this.setState({ postCount })
       // Load Posts
-      for (var i = 1; i <= postCount; i++) {
+      for (var i = postCount; i >= 1; i--) {
         const post = await socialNetwork.methods.posts(i).call()
         this.setState({
           posts: [...this.state.posts, post]
