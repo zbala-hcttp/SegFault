@@ -1,1 +1,25 @@
 /* Styles go here */
+.header {
+    padding: 20px;
+    text-align: center;
+    background: #5CB6DE;
+    color: white;
+    font-size: 30px;
+    font-style: italic;
+  }
+
+.mt-5 {
+    /* align-items: center; */
+    position: relative;
+    margin-top: 0rem !important;
+}
+
+.row {
+    position: absolute;
+    top: 50%;
+    left: 35%;
+}
+.text-center {
+    text-align: center !important;
+    margin-top: 15px;
+}
