@@ -23,6 +23,7 @@ contract SocialNetwork {
 
     event PostTipped(
         uint id,
+		int replyTo,
         string content,
         uint tipAmount,
         address payable author
@@ -66,6 +67,6 @@ contract SocialNetwork {
         // Update the post
         posts[_id] = _post;
         // Trigger an event
-        emit PostTipped(postCount, _post.content, _post.tipAmount, _author);
+        emit PostTipped(postCount, _post.replyTo, _post.content, _post.tipAmount, _author);
     }
 }
