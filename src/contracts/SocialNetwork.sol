@@ -7,6 +7,7 @@ contract SocialNetwork {
 
     struct Post {
         uint id;
+        int replyTo;
         string content;
         uint tipAmount;
         address payable author;
@@ -14,6 +15,7 @@ contract SocialNetwork {
 
     event PostCreated(
         uint id,
+        int replyTo,
         string content,
         uint tipAmount,
         address payable author
@@ -29,16 +31,25 @@ contract SocialNetwork {
     constructor() public {
         name = "SegFault Social Network";
     }
-
+    function replyToPost(string memory _content, int id) public {
+        // Require valid content
+        require(bytes(_content).length > 0);
+        // Increment the post count
+        postCount ++;
+        // Create the post
+        posts[postCount] = Post(postCount, id, _content, 0, msg.sender);
+        // Trigger event
+        emit PostCreated(postCount, id, _content, 0, msg.sender);
+    }
     function createPost(string memory _content) public {
         // Require valid content
         require(bytes(_content).length > 0);
         // Increment the post count
         postCount ++;
         // Create the post
-        posts[postCount] = Post(postCount, _content, 0, msg.sender);
+        posts[postCount] = Post(postCount, -1, _content, 0, msg.sender);
         // Trigger event
-        emit PostCreated(postCount, _content, 0, msg.sender);
+        emit PostCreated(postCount, -1, _content, 0, msg.sender);
     }
 
     function tipPost(uint _id) public payable {

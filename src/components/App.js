@@ -3,14 +3,25 @@ import Web3 from 'web3';
 import Identicon from 'identicon.js';
 import './App.css';
 import SocialNetwork from '../abis/SocialNetwork.json'
+import SEGTokenSale from '../abis/SEGTokenSale.json'
 import Navbar from './Navbar'
 import Main from './Main'
-
+import MyModal from './MyModal'
+import MyPaymentModal from './MyPaymentModal'
+	
 class App extends Component {
 
   async componentWillMount() {
     await this.loadWeb3()
+    await this.initTokenSale()
     await this.loadBlockchainData()
+    console.log(JSON.stringify(this.posts))
+    console.log(this.posts.length)
+    this.setState({posts:this.posts})
+    this.setIpfs()
+    this.setReplies()
+    this.sortPosts()
+    this.setState({ loading: false})
   }
 
   async loadWeb3() {
@@ -26,6 +37,40 @@ class App extends Component {
     }
   }
 
+  setReplies() {
+  
+    for (let p of this.posts) {
+        if (this.replyMap.has(p.id)) {
+            p.replies.push(this.replyMap[p.id])
+        }
+    }
+    this.setState({
+        posts: this.posts
+    })  
+  }
+  setIpfs() {
+    this.setState({
+        posts: this.posts.map(x=>{x.content=this.ipfsCache[x.content];return x})
+      })
+  }
+
+  sortPosts() {
+      // Sort posts. Show highest tipped posts first
+      this.setState({
+        posts: this.posts.sort((a,b) => b.tipAmount - a.tipAmount )
+      })
+  }
+  
+  async initTokenSale() {
+    const web3 = window.web3
+    const networkId = await web3.eth.net.getId()
+    const networkData = SEGTokenSale.networks[networkId]
+    if(networkData) {
+        const tokenSale = new web3.eth.Contract(SEGTokenSale.abi, networkData.address)
+        this.setState({ tokenSale })
+    }
+  }
+  
   async loadBlockchainData() {
     const web3 = window.web3
     // Load account
@@ -37,20 +82,26 @@ class App extends Component {
     if(networkData) {
       const socialNetwork = new web3.eth.Contract(SocialNetwork.abi, networkData.address)
       this.setState({ socialNetwork })
-      const postCount = await socialNetwork.methods.postCount().call()
+      const postCount = parseInt(await socialNetwork.methods.postCount().call())
       this.setState({ postCount })
+      
+      
       // Load Posts
       for (var i = postCount; i >= 1; i--) {
         const post = await socialNetwork.methods.posts(i).call()
-        this.setState({
-          posts: [...this.state.posts, post]
-        })
+        post.replies = []
+        if (post.replyTo == -1) {
+            this.posts.push(post)
+        } else {
+            this.replyMap[post.replyTo] = post
+        }
+        
+        
+        this.ipfs.get('/ipfs/'+post.content).then(result => {
+            this.ipfsCache[post.content] = new TextDecoder().decode(result[0].content)
+        }) 
+        
       }
-      // Sort posts. Show highest tipped posts first
-      this.setState({
-        posts: this.state.posts.sort((a,b) => b.tipAmount - a.tipAmount )
-      })
-      this.setState({ loading: false})
     } else {
       window.alert('SocialNetwork contract not deployed to detected network.')
     }
@@ -58,16 +109,50 @@ class App extends Component {
 
   createPost(content) {
     this.setState({ loading: true })
-    this.state.socialNetwork.methods.createPost(content).send({ from: this.state.account })
-    .once('receipt', (receipt) => {
-      this.setState({ loading: false })
-    })
+    
+    this.ipfs.add(Buffer.from(content)).then(result => {
+        this.state.socialNetwork.methods.createPost(result[0].hash).send({ from: this.state.account }).once('receipt', (receipt) => {
+          this.setState({ loading: false })
+          
+          // Add the newly added post to state and update
+          const created = receipt.events.PostCreated.returnValues 
+          created.content = content
+          this.posts.unshift(created)
+          this.sortPosts();
+        })
+    });
   }
+  
+  
+  
+  replyToPost(content, id) {
+    
+    this.setState({ loading: true })
+    
+    this.ipfs.add(Buffer.from(content)).then(result => {
+        this.state.socialNetwork.methods.replyToPost(result[0].hash, id).send({ from: this.state.account }).once('receipt', (receipt) => {
+          this.setState({ loading: false })
+          
+          // Add the newly added post to state and update
+          const created = receipt.events.PostCreated.returnValues 
+          created.content = content
+          this.setState({
+            posts: [...this.state.posts, created]
+          })
+        })
+    });
+  }
+
 
   tipPost(id, tipAmount) {
     this.setState({ loading: true })
     this.state.socialNetwork.methods.tipPost(id).send({ from: this.state.account, value: tipAmount })
     .once('receipt', (receipt) => {
+    
+      const post = receipt.events.PostTipped.returnValues 
+      this.posts.find(x=>x.id==post.id).tipAmount = post.tipAmount
+      this.sortPosts();
+    
       this.setState({ loading: false })
     })
   }
@@ -77,26 +162,66 @@ class App extends Component {
     this.state = {
       account: '',
       socialNetwork: null,
+      tokenSale: null,
       postCount: 0,
       posts: [],
       loading: true
     }
-
+   
+ 
     this.createPost = this.createPost.bind(this)
     this.tipPost = this.tipPost.bind(this)
+    this.posts = []
+    this.ipfsCache = new Map()
+    this.replies = []
+    this.modal = React.createRef()
+    this.modalPayment = React.createRef()
+    var ipfsAPI = require('ipfs-api')
+    this.replyMap = new Map()
+    this.ipfs = ipfsAPI('localhost', '5001', {protocol: 'http'})
   }
+ 
+  openReplyModal(id) {
+    this.modal.current.show(id)
+  }
+  openBuyModal() {
+  
+    this.modalPayment.current.show()
+  
+  }
+  onSend() {
+    this.replyToPost(this.modal.current.replyContent.value, this.modal.current.id)
+  }
+  
+  onBuy() {
+    
+    let amountTokens = this.modalPayment.current.amount.value
+    this.setState({ loading: true })
 
+    this.state.tokenSale.methods.buyTokens(amountTokens).send({ from: this.state.account, value: 100*amountTokens }).once('receipt', (receipt) => {
+        this.setState({ loading: false })
+        this.modalPayment.hide()
+    });
+
+
+  }
   render() {
     return (
       <div>
-        <Navbar account={this.state.account} />
+        <Navbar account={this.state.account} openBuyModal={this.openBuyModal.bind(this)}/>
         { this.state.loading
           ? <div id="loader" className="text-center mt-5"><p>Loading...</p></div>
-          : <Main
+          : <><Main
               posts={this.state.posts}
               createPost={this.createPost}
               tipPost={this.tipPost}
+              openReplyModal={this.openReplyModal.bind(this)}
             />
+            <MyModal ref={this.modal}
+                onSend={this.onSend.bind(this)}/>
+            <MyPaymentModal ref={this.modalPayment}
+                onSend={this.onBuy.bind(this)}/>
+            </>
         }
       </div>
     );

@@ -1,17 +1,19 @@
 import React, { Component } from 'react';
 import Identicon from 'identicon.js';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 class Main extends Component {
 
   render() {
     return (
       <div>
-        <div class="header">
-          <h1>SegFault</h1>
-        </div>
+      
         <div className="container-fluid mt-5">
+        
           <div className="row">
-            <main role="main" className="col" style={{ maxWidth: '500px' }}>
+          
+            <main role="main" className="col ml-5 mr-5">
+            
               <div className="content mr-auto ml-auto">
                 <p>&nbsp;</p>
                   <form onSubmit={(event) => {
@@ -20,7 +22,7 @@ class Main extends Component {
                     this.props.createPost(content)
                   }}>
                   <div className="form-group mr-sm-2">
-                    <input
+                    <textarea
                       id="postContent"
                       type="text"
                       ref={(input) => { this.postContent = input }}
@@ -28,7 +30,7 @@ class Main extends Component {
                       placeholder="What is your question?"
                       required />
                   </div>
-                  <div class="col text-center">
+                  <div className="col text-center">
                     <button 
 						type="submit" 
 						className="btn btn-primary btn-default btn-block" 
@@ -39,6 +41,7 @@ class Main extends Component {
                   
                 </form>
                 <p>&nbsp;</p>
+                
                 { this.props.posts.map((post, key) => {
                   return(
                     <div className="card mb-4" key={key} >
@@ -59,6 +62,7 @@ class Main extends Component {
                           <small className="float mt-1 text-muted">
                             Votes: {window.web3.utils.fromWei(post.tipAmount.toString(), 'Ether')} ETH
                           </small>
+                  
                           <button
                             className="btn btn-link btn-sm float-right pt-0"
                             name={post.id}
@@ -70,9 +74,23 @@ class Main extends Component {
                           >
                             UPVOTE
                           </button>
+                                  <button
+                            className="btn btn-link btn-sm float-right pt-0"
+                            name={post.id}
+                            onClick={(event) => {
+                              this.props.openReplyModal(event.target.name)
+                            }}
+                          >
+                            REPLY
+                          </button>
                         </li>
                       </ul>
                     </div>
+                    
+   
+                    
+             
+                    
                   )
                 })}
               </div>

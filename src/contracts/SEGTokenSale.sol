@@ -19,7 +19,9 @@ contract SEGTokenSale {
     function multiply(uint x, uint y) internal pure returns (uint z) {
         require(y == 0 || (z = x * y) / y == x);
     }
-
+    function getPrice() public view returns (uint256 z) {
+        return tokenPrice;
+    }
     function buyTokens(uint256 _numberOfTokens) public payable {
         require(msg.value == multiply(_numberOfTokens, tokenPrice));
         require(tokenContract.balanceOf(address(this)) >= _numberOfTokens);
