@@ -38,10 +38,12 @@ class App extends Component {
   }
 
   setReplies() {
-  
     for (let p of this.posts) {
-        if (this.replyMap.has(p.id)) {
-            p.replies.push(this.replyMap[p.id])
+        if (this.replyMap[p.id] != null) {
+            for (let reply of this.replyMap[p.id]) {
+                reply.content = this.ipfsCache[reply.content];
+                p.replies.push(reply)
+            }
         }
     }
     this.setState({
@@ -93,7 +95,10 @@ class App extends Component {
         if (post.replyTo == -1) {
             this.posts.push(post)
         } else {
-            this.replyMap[post.replyTo] = post
+            if (this.replyMap[post.replyTo] == null) {
+                this.replyMap[post.replyTo] = []
+            }
+            this.replyMap[post.replyTo].push(post)
         }
         
         
@@ -117,6 +122,7 @@ class App extends Component {
           // Add the newly added post to state and update
           const created = receipt.events.PostCreated.returnValues 
           created.content = content
+          created.replies = []
           this.posts.unshift(created)
           this.sortPosts();
         })
@@ -136,8 +142,9 @@ class App extends Component {
           // Add the newly added post to state and update
           const created = receipt.events.PostCreated.returnValues 
           created.content = content
+          this.posts.find(x=>x.id==id).replies.push(created)
           this.setState({
-            posts: [...this.state.posts, created]
+            posts: this.posts
           })
         })
     });
@@ -150,7 +157,7 @@ class App extends Component {
     .once('receipt', (receipt) => {
     
       const post = receipt.events.PostTipped.returnValues 
-      this.posts.find(x=>x.id==post.id).tipAmount = post.tipAmount
+      this.posts.find(x=>x.id==id).tipAmount = post.tipAmount
       this.sortPosts();
     
       this.setState({ loading: false })
@@ -205,6 +212,22 @@ class App extends Component {
 
 
   }
+  
+  tipReply(id, tipAmount) {
+      this.setState({ loading: true })
+    this.state.socialNetwork.methods.tipPost(id).send({ from: this.state.account, value: tipAmount })
+    .once('receipt', (receipt) => {
+    
+      const post = receipt.events.PostTipped.returnValues 
+      this.replyMap[post.replyTo].find(x=>x.id==id).tipAmount = post.tipAmount
+      this.sortPosts();
+    
+      this.setState({ loading: false })
+    })
+    
+    
+  }
+  
   render() {
     return (
       <div>
@@ -215,6 +238,7 @@ class App extends Component {
               posts={this.state.posts}
               createPost={this.createPost}
               tipPost={this.tipPost}
+              tipReply={this.tipReply.bind(this)}
               openReplyModal={this.openReplyModal.bind(this)}
             />
             <MyModal ref={this.modal}
